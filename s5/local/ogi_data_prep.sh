@@ -20,7 +20,8 @@ mkdir -p $dir
 . ./path.sh || exit 1; # for KALDI_ROOT
 
 [ ! -d $OGIROOT/docs ] && echo "Error: the OGI directory must contains docs directory" && exit 1;
-
+#Split speakers among test dev train in 3 sep files each contain list of speakers
+#Write code in the shell to generate 3 dir data/train data/test data/dev and modify the below code to accept list of spekers 
 python local/gen_text_utt2spkr.py $OGIROOT $dir/text $dir/utt2spk $dir/wav.scp -v $ver -g $grads
 #Sort Files
 sort -o $dir/text $dir/text

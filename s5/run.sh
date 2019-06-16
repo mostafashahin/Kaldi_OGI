@@ -7,3 +7,6 @@ set -e # exit on error
 
 local/ogi_data_prep.sh /media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus/
 
+#Generate MFCC
+
+steps/make_mfcc.sh --nj 20 --cmd "$train_cmd" data/train exp/make_mfcc/train $mfccdir
