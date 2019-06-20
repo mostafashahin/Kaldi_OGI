@@ -30,8 +30,16 @@ import glob, sys
 from os.path import join, isfile, splitext, basename, normpath
 import argparse
 
-def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, lVerf = [1,2,4], lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
+#TODO:Let function takes file names strings not file objects and open it as append
+def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4], lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
     sDocsDir = join(sOGIDir,'docs')
+    print(sSpkrList)
+    if isfile(sSpkrList):#Load list of selected speakers 
+        with open(sSpkrList) as flSpkrList:
+            lSelectSpkrs = flSpkrList.read().splitlines()
+        print(lSelectSpkrs[0], len(lSelectSpkrs))
+    else:
+        lSelectSpkrs = None
     dfMap = pd.read_csv(join(sDocsDir,'all.map'),sep=' ',names=['id','trans'])
     aVerFiles = np.asarray([join(sOGIDir,'docs',str(i).zfill(2)+'-verified.txt') for i in lGrades],dtype=str) #The ver files exist in the docs directory as 00-verified.txt, 01-verified.txt, ....
     aIsFile = np.asarray([isfile(f) for f in aVerFiles],dtype=bool) #Check that all ver files are exist
@@ -43,6 +51,10 @@ def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, lVerf = [1,2,4], lGrades = [0
     dfVer = pd.concat(aDataFrames,ignore_index=True)
     dfVer.path[dfVer.ver.isin(lVerf)]
     aPaths = dfVer.path.values
+    if lSelectSpkrs != None:
+        lSpkrs = [splitext(basename(sPath))[0][:5] for sPath in aPaths]
+        lInxSelcSpkrs = [i for i in range(len(lSpkrs)) if lSpkrs[i] in lSelectSpkrs]
+        aPaths = aPaths[lInxSelcSpkrs]
     for sPath in aPaths:
         sRecId = splitext(basename(sPath))[0]
         sUttId = sRecId #Each recording contains one segment
@@ -55,7 +67,7 @@ def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, lVerf = [1,2,4], lGrades = [0
             return
         sTrans = dfMap.trans[dfMap.id==sTransId].iloc[0].upper()
         print(sSpkId+'-'+sUttId, sTrans, file=fTxt)
-        print(sUttId, sSpkId, file=fUtt2Spk)
+        print(sSpkId+'-'+sUttId, sSpkId, file=fUtt2Spk)
         print(sSpkId+'-'+sUttId, sWavAbsPath, file=fWavScp)
     #print(dfVer.path.values,file=fOutFile)
     return
@@ -84,6 +96,7 @@ def ArgParser():
     parser.add_argument('Text_File',  help='The path to the text file with <UttID> <Trans>', type=str)
     parser.add_argument('Utterance_to_Speakers_File',  help='The path to the Utterance to Speaker mapping file', type=str)
     parser.add_argument('Wav_Scp_File',  help='The path to the file contains list of wav files <RecID> <wavfile>', type=str)
+    parser.add_argument('-l', '--spkrl', help='The file contains list of selected speakers', dest='spkrl', type=str, default='')
     parser.add_argument('-v', '--verify', help='The list of selected verification codes', dest='ver', action=str2list, default=[1,2,4])
     parser.add_argument('-g', '--grade', dest='grd', help='The list of kids grads to be included', action=str2list, default=list(range(0,11)))
     return parser.parse_args()
@@ -91,10 +104,11 @@ def ArgParser():
 if __name__ == '__main__':
     args = ArgParser()
     sOGIDir, sTxt, sUtt2Spk, sWavScp = args.OGI_Dir, args.Text_File, args.Utterance_to_Speakers_File, args.Wav_Scp_File
+    sSpkrList = args.spkrl
     lVerf = args.ver
     lGrades = args.grd
     with open(sTxt,'w') as fTxt, open(sUtt2Spk,'w') as fUtt2Spk, open(sWavScp,'w') as fWavScp:
-        get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, lVerf = lVerf, lGrades = lGrades)
+        get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList=sSpkrList, lVerf = lVerf, lGrades = lGrades)
 
 
 
