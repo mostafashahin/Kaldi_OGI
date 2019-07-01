@@ -29,9 +29,14 @@ import numpy as np
 import glob, sys
 from os.path import join, isfile, splitext, basename, normpath
 import argparse
+import re
 
 #TODO:Let function takes file names strings not file objects and open it as append
 def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4], lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
+    
+    #Regular Expression to normalize the text
+    p = re.compile('([\w]+)[,"\'.](\s)')
+
     sDocsDir = join(sOGIDir,'docs')
     print(sSpkrList)
     if isfile(sSpkrList):#Load list of selected speakers 
@@ -66,6 +71,7 @@ def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4]
             print('Invalid Trans ID:%s in Utt %s' % (sWavAbsPath,sTransId))
             return
         sTrans = dfMap.trans[dfMap.id==sTransId].iloc[0].upper()
+        sTrans = p.sub(r'\1\2',sTrans)
         print(sSpkId+'-'+sUttId, sTrans, file=fTxt)
         print(sSpkId+'-'+sUttId, sSpkId, file=fUtt2Spk)
         print(sSpkId+'-'+sUttId, sWavAbsPath, file=fWavScp)
