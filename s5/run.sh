@@ -13,7 +13,7 @@ OGIROOT=/media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus/
 
 if [ $stage -le 0 ]; then
     #Prepare data: generate text, wav.scp, ...
- #   local/ogi_data_prep.sh $OGIROOT || exit 1
+    local/ogi_data_prep.sh $OGIROOT || exit 1
     
     #Generate MFCC
     
