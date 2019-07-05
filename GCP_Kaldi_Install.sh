@@ -1,4 +1,6 @@
 #!/bin/bash
+#Script to git and install kaldi on Google Cloud Platform linux instance
+
 
 #Get number of available cpus
 n=$(nproc --all) #will be used to speed up make
