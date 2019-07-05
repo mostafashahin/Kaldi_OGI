@@ -2,6 +2,8 @@
 # Copyright 2012  Johns Hopkins University (Author: Daniel Povey)
 # Apache 2.0
 
+set -e
+
 [ -f ./path.sh ] && . ./path.sh
 
 # begin configuration section.

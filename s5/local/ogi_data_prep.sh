@@ -3,6 +3,8 @@
 #This code for preparing the OGI kids data for kaldi ASR training
 #Should be run from s5 directory
 
+set -e
+
 if [ $# != 1 ]; then
 	echo "Usage: ogi_data_prep.sh /path/to/ogi_data"
 	exit 1;
@@ -32,11 +34,11 @@ touch $trndir/spkrs $tstdir/spkrs $devdir/spkrs
 #Split speakers to train, test and dev by default 15% for test, 15% dev and 70% training
 #Can be modified by passing optional --train_portion float, --test_portion float, --dev_portion float to the command
 
-python local/ogi_split_data.py /media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus $trndir/spkrs $tstdir/spkrs $devdir/spkrs
+local/ogi_split_data.py /media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus $trndir/spkrs $tstdir/spkrs $devdir/spkrs
 
 for dir in $trndir $tstdir $devdir; do
     
-    python local/gen_text_utt2spkr.py $OGIROOT $dir/text $dir/utt2spk $dir/wav.scp -l $dir/spkrs -v $ver -g $grads
+    local/gen_text_utt2spkr.py $OGIROOT $dir/text $dir/utt2spk $dir/wav.scp -l $dir/spkrs -v $ver -g $grads
 
     #Sort Files
     sort -o $dir/text $dir/text

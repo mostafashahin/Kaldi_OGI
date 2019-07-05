@@ -4,12 +4,12 @@
 . ./path.sh
 set -e # exit on error
 
-stage=5
+stage=0
 
 
 #Call data preparation script with the path to the OGI data (must contains the docs disrectory)
 
-OGIROOT=/media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus/
+OGIROOT=/short/wa66/ms4470/working_ogi/data/OREGON_Kids_Corpus/
 
 if [ $stage -le 0 ]; then
     #Prepare data: generate text, wav.scp, ...

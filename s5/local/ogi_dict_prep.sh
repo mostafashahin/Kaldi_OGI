@@ -3,6 +3,8 @@
 #This code for preparing the data/local/dict dirictory of OGI kids data for kaldi ASR training
 #Should be run from s5 directory
 
+set -e
+
 if [ $# != 1 ]; then
         echo "Usage: ogi_dict_prep.sh /path/to/ogi_data"
         exit 1;
