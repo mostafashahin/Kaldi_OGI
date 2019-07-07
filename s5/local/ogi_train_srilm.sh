@@ -3,7 +3,6 @@
 #This code for preparing the data/local/dict dirictory of OGI kids data for kaldi ASR training
 #Should be run from s5 directory
 
-set -e
 
 if [ $# != 1 ]; then
 	echo "Usage: $(basename $0) /path/to/ogi_data"
@@ -13,7 +12,12 @@ fi
 #Make sure that srilm installed
 echo $KALDI_ROOT/tools/srilm/bin/i686-m64
 which ngram-count
-[ $? -eq 0 ] || [ -d $KALDI_ROOT/tools/srilm/bin/i686-m64 ] && export PATH=$PATH:$KALDI_ROOT/tools/srilm/bin/i686-m64 || exit 1
+if [ $? -ne 0 ]; then 
+    if [ -d $KALDI_ROOT/tools/srilm/bin/i686-m64 ]; then 
+        export PATH=$PATH:$KALDI_ROOT/tools/srilm/bin/i686-m64
+    fi
+fi
+
 
 OGIROOT=$1
 langdir=`pwd`/data/lang

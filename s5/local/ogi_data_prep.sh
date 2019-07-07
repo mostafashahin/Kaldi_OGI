@@ -34,7 +34,7 @@ touch $trndir/spkrs $tstdir/spkrs $devdir/spkrs
 #Split speakers to train, test and dev by default 15% for test, 15% dev and 70% training
 #Can be modified by passing optional --train_portion float, --test_portion float, --dev_portion float to the command
 
-local/ogi_split_data.py /media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus $trndir/spkrs $tstdir/spkrs $devdir/spkrs
+local/ogi_split_data.py $OGIROOT $trndir/spkrs $tstdir/spkrs $devdir/spkrs
 
 for dir in $trndir $tstdir $devdir; do
     

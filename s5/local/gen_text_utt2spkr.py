@@ -69,7 +69,7 @@ def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4]
         aTransMask = dfMap.id==sTransId
         if not aTransMask.any():
             print('Invalid Trans ID:%s in Utt %s' % (sWavAbsPath,sTransId))
-            return
+            continue
         sTrans = dfMap.trans[dfMap.id==sTransId].iloc[0].upper()
         sTrans = p.sub(r'\1\2',sTrans)
         print(sSpkId+'-'+sUttId, sTrans, file=fTxt)
