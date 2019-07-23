@@ -25,10 +25,10 @@ If you want to use GPUs (and have them), go to src/, and configure and make on a
 where "nvcc" is installed.
 EOF
   fi
-  parallel_opts="--gpu 1"
+  #parallel_opts="--gpu 1"
   num_threads=1
   minibatch_size=512
-  dir=exp/nnet_pnorm_fast_gpu_mixup
+  dir=exp/nnet_pnorm_fast_gpu_raw_temp
 else
   # with just 4 jobs this might be a little slow.
   num_threads=16
@@ -40,12 +40,6 @@ fi
 . ./cmd.sh
 . utils/parse_options.sh
 
-#if [ ! -f $dir/final.mdl ]; then
-#  if [[  $(hostname -f) ==  *.clsp.jhu.edu ]]; then
-#     # spread the egs over various machines.  will help reduce overload of any
-#     # one machine.
-#     utils/create_split_dir.pl /export/b0{1,2,3,4}/$USER/kaldi-data/egs/librispeech/s5/$dir/egs/storage $dir/egs/storage
-#  fi
 
 steps/nnet2/train_pnorm_fast.sh --stage $train_stage \
    --samples-per-iter 400000 --mix-up 10000\
@@ -56,28 +50,19 @@ steps/nnet2/train_pnorm_fast.sh --stage $train_stage \
    --num-jobs-nnet 1  \
    --initial-learning-rate 0.01 --final-learning-rate 0.001 \
    --num-hidden-layers 4 \
-   --pnorm-input-dim 4000 --pnorm-output-dim 400 \
-   --cmd "$decode_cmd" \
+   --pnorm-input-dim 1000 --pnorm-output-dim 200 \
+   --cmd "$decode_cmd" --feat-type raw \
     data/train data/lang exp/tri3b_ali $dir || exit 1
 #fi
-
+'''
 steps/nnet2/decode.sh --nj 1 --cmd "$decode_cmd" \
     --transform-dir exp/tri3b/decode \
     exp/tri3b/graph data/test $dir/decode || exit 1;
 
+'''
+steps/nnet2/decode.sh --nj 1 --cmd "$decode_cmd" --skip_scoring true\
+    exp/tri3b/graph data/test $dir/decode || exit 1;
 
-#for test in test_clean test_other dev_clean dev_other; do
-#  steps/nnet2/decode.sh --nj 20 --cmd "$decode_cmd" \
-#    --transform-dir exp/tri5b/decode_tgsmall_$test \
-#    exp/tri5b/graph_tgsmall data/$test $dir/decode_tgsmall_$test || exit 1;
-#  steps/lmrescore.sh --cmd "$decode_cmd" data/lang_test_{tgsmall,tgmed} \
-#    data/$test $dir/decode_{tgsmall,tgmed}_$test  || exit 1;
-#  steps/lmrescore_const_arpa.sh \
-#    --cmd "$decode_cmd" data/lang_test_{tgsmall,tglarge} \
-#    data/$test $dir/decode_{tgsmall,tglarge}_$test || exit 1;
-#  steps/lmrescore_const_arpa.sh \
-#    --cmd "$decode_cmd" data/lang_test_{tgsmall,fglarge} \
-#    data/$test $dir/decode_{tgsmall,fglarge}_$test || exit 1;
-#done
+local/score.sh data/test/ data/lang/ $dir/decode/
 
 exit 0;
