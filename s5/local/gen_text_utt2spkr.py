@@ -21,8 +21,8 @@
 #         8 --> 8,j 
 #         9 --> 9,k 
 #         10 --> a,l 
-
-#Uttid 2 digits, check docs/all.map
+#Uttid 2 digits, check docs/all.map for scripted
+#Uttid is xx for spontaneous speech
 
 import pandas as pd
 import numpy as np
@@ -31,6 +31,28 @@ from os.path import join, isfile, splitext, basename, normpath
 import argparse
 import re
 
+#There are different type of noise tags in the OGI trans files see https://catalog.ldc.upenn.edu/docs/LDC2006S35/labeling.pdf for details.
+#Here each tag converted to a noise symbole, the dictionary has the tag as key and tuple with two symbol values, when connected to a word and when not connected.
+
+dNoiseTag2Symb = {
+        "<asp>"  : ('',''), #heavily aspirated p, t, or k or puff at end of word
+        "<beep>" : ('',''), #a beep sound
+        "<blip>" : ('',''), #temp signal blip signal goes completely silent for a period
+        "<bn>"   : ('','NSN'), #Background noise
+        "<br>"   : ('','NSN'), #breathing noise
+        "<bs>"   : ('','SN'), #background speech
+        "<cough>": ('','NSN'), # cough sound
+        "<ct>"   : ('','NSN'), # a clear throat
+        "<fp>"   : ('','SN'), #generic filled pause/false start
+        "<lau>"  : ('',''), # ??
+        "<laugh>": ('LAU','LAU'), #laughter
+        "<ln>"   : ('','NSN'), # line noise
+        "<long>" : ('',''), #elongated word
+        "<ls>"   : ('','NSN'), #lip smack
+        "<n>"    : ('',''), # ??
+        "<nitl>" : ('','')
+
+        }
 #TODO:Let function takes file names strings not file objects and open it as append
 def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4], lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
     
@@ -78,6 +100,37 @@ def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4]
     #print(dfVer.path.values,file=fOutFile)
     return
 
+def get_spont(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4], lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
+    #1- get all trans files that match spkids, 2- Make sure each trans has wav file,
+    #3- loop on trans files, 4- Treat the noise tags, 5- treat the [] remove what between them, 
+    Get_basename = lambda s : splitext(basename(s))[0]
+    Get_SpkrID = lambda s : splitext(basename(s))[0][:5]
+    sTransDir = join(sOGIDir,'trans/spontaneous')
+    sWavDir = join(sOGIDir,'speech/spontaneous')
+    
+    #Get all trans & wav files
+    lTransFiles = np.asarray(glob.glob(join(sTransDir,'**/*.txt'),recursive=True))
+    lWavFiles = np.asarray(glob.glob(join(sWavDir,'**/*.wav'),recursive=True))
+    
+    #Find wav files that have trans files 
+    lValidFiles = np.intersect1d(np.asarray(list(map(Get_basename,lWavFiles))),np.asarray(list(map(Get_basename,lTransFiles))),return_indices=True)
+    
+    #Update files
+    lWavFiles = lWavFiles[lValidFiles[1]]
+    lTransFiles = lTransFiles[lValidFiles[2]]
+
+    #Get files of selected speakers
+    if isfile(sSpkrList):#Load list of selected speakers
+        with open(sSpkrList) as flSpkrList:
+            lSelectSpkrs = flSpkrList.read().splitlines()
+        print(lSelectSpkrs[0], len(lSelectSpkrs))
+        lSelectedFilesMap = np.in1d(list(map(Get_SpkrID,lWavFiles)),lSelectSpkrs)
+        lWavFiles = lWavFiles[lSelectedFilesMap]
+
+
+
+
+
 class str2list(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         if nargs is not None:
@@ -102,6 +155,8 @@ def ArgParser():
     parser.add_argument('Text_File',  help='The path to the text file with <UttID> <Trans>', type=str)
     parser.add_argument('Utterance_to_Speakers_File',  help='The path to the Utterance to Speaker mapping file', type=str)
     parser.add_argument('Wav_Scp_File',  help='The path to the file contains list of wav files <RecID> <wavfile>', type=str)
+    parser.add_argument('-r','--read', help='Use this option to enable processing scripted (read) part of the OGI data', dest='process_read_data', action='store_true',default=False)
+    parser.add_argument('-s','--spontaneous', help='Use this option to enable processing of spontaneous part of the data', dest='process_spontaneous_data', action='store_true', default=False)
     parser.add_argument('-l', '--spkrl', help='The file contains list of selected speakers', dest='spkrl', type=str, default='')
     parser.add_argument('-v', '--verify', help='The list of selected verification codes', dest='ver', action=str2list, default=[1,2,4])
     parser.add_argument('-g', '--grade', dest='grd', help='The list of kids grads to be included', action=str2list, default=list(range(0,11)))
@@ -113,8 +168,10 @@ if __name__ == '__main__':
     sSpkrList = args.spkrl
     lVerf = args.ver
     lGrades = args.grd
-    with open(sTxt,'w') as fTxt, open(sUtt2Spk,'w') as fUtt2Spk, open(sWavScp,'w') as fWavScp:
-        get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList=sSpkrList, lVerf = lVerf, lGrades = lGrades)
+    with open(sTxt,'a') as fTxt, open(sUtt2Spk,'a') as fUtt2Spk, open(sWavScp,'a') as fWavScp:
+        if args.process_read_data:
+            get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList=sSpkrList, lVerf = lVerf, lGrades = lGrades)
+        if args.process_spontaneous_data:
 
 
 
