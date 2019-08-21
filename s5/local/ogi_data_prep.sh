@@ -5,14 +5,15 @@
 
 set -e
 
-if [ $# != 1 ]; then
-	echo "Usage: ogi_data_prep.sh /path/to/ogi_data"
-	exit 1;
-fi
+#if [ $# != 1 ]; then
+#	echo "Usage: ogi_data_prep.sh /path/to/ogi_data"
+#	exit 1;
+#fi
 
 export LC_ALL=C #To make sure that the sorting of files will be performed in the same way as C++
 
 OGIROOT=$1
+data_prep_opt=${@:2}
 ver=1,2,3 #The selected level of verification 
 grads='5-10' #The selected grad range of children
 
@@ -36,10 +37,16 @@ touch $trndir/spkrs $tstdir/spkrs $devdir/spkrs
 
 local/ogi_split_data.py $OGIROOT $trndir/spkrs $tstdir/spkrs $devdir/spkrs
 
-for dir in $trndir $tstdir $devdir; do
-    
-    local/gen_text_utt2spkr.py $OGIROOT $dir/text $dir/utt2spk $dir/wav.scp -l $dir/spkrs -v $ver -g $grads
+#Spontaneous speech can be used only in training
+local/gen_text_utt2spkr.py $OGIROOT $trndir/text $trndir/utt2spk $trndir/wav.scp -l $trndir/spkrs -v $ver -g $grads $data_prep_opt
 
+for dir in $tstdir $devdir; do
+    
+    local/gen_text_utt2spkr.py $OGIROOT $dir/text $dir/utt2spk $dir/wav.scp -l $dir/spkrs -v $ver -g $grads -r
+
+done
+
+for dir in $trndir $tstdir $devdir; do
     #Sort Files
     sort -o $dir/text $dir/text
     sort -o $dir/utt2spk $dir/utt2spk

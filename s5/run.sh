@@ -9,11 +9,13 @@ stage=0
 
 #Call data preparation script with the path to the OGI data (must contains the docs disrectory)
 
-OGIROOT=/short/wa66/ms4470/working_ogi/data/OREGON_Kids_Corpus/
+OGIROOT=/media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus/
+#set flags
+data_prep_opt='-r -s' #-r to activate read data, -s to activate spontaneous data
 
 if [ $stage -le 0 ]; then
     #Prepare data: generate text, wav.scp, ...
-    local/ogi_data_prep.sh $OGIROOT || exit 1
+    local/ogi_data_prep.sh $OGIROOT $data_prep_opt || exit 1
     
     #Generate MFCC
     
