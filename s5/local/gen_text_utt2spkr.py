@@ -31,6 +31,32 @@ from os.path import join, isfile, splitext, basename, normpath
 import argparse
 import re
 
+re.DOTALL
+
+dGrad2Int = {
+        '0' : 0,
+        'b' : 0,
+        '1' : 1,
+        'c' : 1,
+        '2' : 2,
+        'd' : 2,
+        '3' : 3,
+        'e' : 3,
+        '4' : 4,
+        'f' : 4,
+        '5' : 5,
+        'g' : 5,
+        '6' : 6,
+        'h' : 6,
+        '7' : 7,
+        'i' : 7,
+        '8' : 8,
+        'j' : 8,
+        '9' : 9,
+        'k' : 9,
+        'a' : 10,
+        'l' : 10
+        }
 #There are different type of noise tags in the OGI trans files see https://catalog.ldc.upenn.edu/docs/LDC2006S35/labeling.pdf for details.
 #Here each tag converted to a noise symbole, the dictionary has the tag as key and tuple with two symbol values, when connected to a word and when not connected.
 
@@ -38,26 +64,60 @@ dNoiseTag2Symb = {
         "<asp>"  : ('',''), #heavily aspirated p, t, or k or puff at end of word
         "<beep>" : ('',''), #a beep sound
         "<blip>" : ('',''), #temp signal blip signal goes completely silent for a period
-        "<bn>"   : ('','NSN'), #Background noise
-        "<br>"   : ('','NSN'), #breathing noise
-        "<bs>"   : ('','SN'), #background speech
-        "<cough>": ('','NSN'), # cough sound
-        "<ct>"   : ('','NSN'), # a clear throat
-        "<fp>"   : ('','SN'), #generic filled pause/false start
+        "<bn>"   : ('','<NOISE>'), #Background noise
+        "<br>"   : ('','<NOISE>'), #breathing noise
+        "<bs>"   : ('','<SPOKEN_NOISE>'), #background speech
+        "<cough>": ('','<NOISE>'), # cough sound
+        "<ct>"   : ('','<NOISE>'), # a clear throat
+        "<fp>"   : ('','<SPOKEN_NOISE>'), #generic filled pause/false start
         "<lau>"  : ('',''), # ??
-        "<laugh>": ('LAU','LAU'), #laughter
-        "<ln>"   : ('','NSN'), # line noise
+        "<laugh>": ('<SPOKEN_NOISE>','<SPOKEN_NOISE>'), #laughter
+        "<ln>"   : ('','<NOISE>'), # line noise
         "<long>" : ('',''), #elongated word
-        "<ls>"   : ('','NSN'), #lip smack
+        "<ls>"   : ('','<NOISE>'), #lip smack
         "<n>"    : ('',''), # ??
-        "<nitl>" : ('','')
-
+        "<nitl>" : ('',''), # need special handeling, used for forigen language, can remove all and replace with SN --
+        "<ns>"   : ('','<NOISE>'), # non-speech sound
+        "<pau>"  : ('','!SIL'), # Silence/pause
+        "<pf>"   : ('',''), # ??
+        "<pron>" : ('',''), # Also need special handeling --
+        "<sing>" : ('',''), #Singing
+        "<sneeze>": ('','<NOISE>'), #Sneezing
+        "<sniff>": ('','<NOISE>'), #sniffing
+        "<sp>"   : ('',''), #Unkown spelling -- 
+        "<tc>"   : ('<NOISE>','<NOISE>'), #tongue click
+        "<uu>"   : ('<SPOKEN_NOISE>','<SPOKEN_NOISE>'), #unintelligible speech
+        "<whisper>": ('',''), #whispered speech
+        "<yawn>" : ('',''), #yawn
         }
+
+#Function to replace the tag with symbol, return first element in the dNoiseTag2Symb tuble if connected and second element if not
+
+def replace(match):
+  if match.group(1).isalpha() or match.group(3).isalpha(): 
+    symb = dNoiseTag2Symb[match.group(2)][0]
+  else:
+    symb = dNoiseTag2Symb[match.group(2)][1]
+  return ' '.join([match.group(1),symb,match.group(3)])
+
+def apply_re_on_files(lFiles,lRe,isUpper=False):
+    lTrans = []
+    for sFile in lFiles:
+        with open(sFile,'r') as f:
+            sContent = ' '.join(f.read().splitlines()) # some files has more than one line, merge them so one string returned for each file
+        for ptrn,repl in lRe:
+            sContent = ptrn.sub(repl,sContent)
+        if isUpper:
+            sContent = sContent.upper()
+        lTrans.append(sContent)
+    return lTrans
+
 #TODO:Let function takes file names strings not file objects and open it as append
 def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4], lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
     
     #Regular Expression to normalize the text
-    p = re.compile('([\w]+)[,"\'.](\s)')
+    #p = re.compile('([\w\s]+)[\W](\s|$)')
+    rP_norm = re.compile('([\w\s]+)[\'\",\.](\s|$)|\*')
 
     sDocsDir = join(sOGIDir,'docs')
     print(sSpkrList)
@@ -93,42 +153,65 @@ def get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4]
             print('Invalid Trans ID:%s in Utt %s' % (sWavAbsPath,sTransId))
             continue
         sTrans = dfMap.trans[dfMap.id==sTransId].iloc[0].upper()
-        sTrans = p.sub(r'\1\2',sTrans)
+        sTrans = rP_norm.sub(r'\1\2',sTrans)
         print(sSpkId+'-'+sUttId, sTrans, file=fTxt)
         print(sSpkId+'-'+sUttId, sSpkId, file=fUtt2Spk)
         print(sSpkId+'-'+sUttId, sWavAbsPath, file=fWavScp)
     #print(dfVer.path.values,file=fOutFile)
     return
 
-def get_spont(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lVerf = [1,2,4], lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
+def get_spont(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList='', lGrades = [0,1,2,3,4,5,6,7,8,9,10]):
     #1- get all trans files that match spkids, 2- Make sure each trans has wav file,
     #3- loop on trans files, 4- Treat the noise tags, 5- treat the [] remove what between them, 
     Get_basename = lambda s : splitext(basename(s))[0]
-    Get_SpkrID = lambda s : splitext(basename(s))[0][:5]
+    #Get_SpkrID = lambda s : splitext(basename(s))[0][:5]
+    
     sTransDir = join(sOGIDir,'trans/spontaneous')
     sWavDir = join(sOGIDir,'speech/spontaneous')
     
     #Get all trans & wav files
     lTransFiles = np.asarray(glob.glob(join(sTransDir,'**/*.txt'),recursive=True))
     lWavFiles = np.asarray(glob.glob(join(sWavDir,'**/*.wav'),recursive=True))
-    
+    lUttIDs = (np.asarray(list(map(Get_basename,lWavFiles))),np.asarray(list(map(Get_basename,lTransFiles))))
+
     #Find wav files that have trans files 
-    lValidFiles = np.intersect1d(np.asarray(list(map(Get_basename,lWavFiles))),np.asarray(list(map(Get_basename,lTransFiles))),return_indices=True)
+    lValidFiles = np.intersect1d(*lUttIDs,return_indices=True)
     
-    #Update files
+    #Update file lists
     lWavFiles = lWavFiles[lValidFiles[1]]
     lTransFiles = lTransFiles[lValidFiles[2]]
+    lUttID = lUttIDs[0][lValidFiles[1]]
 
-    #Get files of selected speakers
+    #Get files of selected speakers & grades
+    lSpkrID = np.asarray([s[:5] for s in lUttID])
+    lGradID = np.asarray([dGrad2Int[s[2]] for s in lUttID])
+
     if isfile(sSpkrList):#Load list of selected speakers
         with open(sSpkrList) as flSpkrList:
             lSelectSpkrs = flSpkrList.read().splitlines()
         print(lSelectSpkrs[0], len(lSelectSpkrs))
-        lSelectedFilesMap = np.in1d(list(map(Get_SpkrID,lWavFiles)),lSelectSpkrs)
+        lSelectedFilesMap = np.in1d(lSpkrID,lSelectSpkrs) & np.in1d(lGradID,lGrades)
+
+        #Update file lists
         lWavFiles = lWavFiles[lSelectedFilesMap]
+        lTransFiles = lTransFiles[lSelectedFilesMap]
+        lUttID = lUttID[lSelectedFilesMap]
+        lSpkrID = lSpkrID[lSelectedFilesMap]
+    
+    #Map noise tags to kaldi symbols
+    sPatterns = '|'.join(dNoiseTag2Symb.keys())
+    rP_noise_Ncnctd = re.compile('(?<!\w)'+'('+sPatterns+')'+'(?!\w)')
+    rP_noise_cnctd = re.compile(sPatterns)
+    rP_norm = re.compile('([\w\s]+)[\'\",\.](\s|$)|\*')
+    rP_norm2 = re.compile('<(?!NOISE|SPOKEN_NOISE)|(?<!NOISE)>|(?<!SPOKEN_NOISE)>')
+    rP_CuttOff = re.compile('\[.+\]|\(.+\)')
+    lTrans = apply_re_on_files(lTransFiles,((rP_noise_Ncnctd,lambda s: ' '+dNoiseTag2Symb[s.group(0)][1]+' '),(rP_noise_cnctd,lambda s: ' '+dNoiseTag2Symb[s.group(0)][0]+' '),(rP_norm,r'\1\2'),(rP_CuttOff,'')),isUpper= True)
 
-
-
+    for sSpkId, sUttId, sTrans,sWavAbsPath in zip(lSpkrID, lUttID, lTrans, lWavFiles):
+        print(sSpkId+'-'+sUttId, sTrans, file=fTxt)
+        print(sSpkId+'-'+sUttId, sSpkId, file=fUtt2Spk)
+        print(sSpkId+'-'+sUttId, sWavAbsPath, file=fWavScp)
+    return
 
 
 class str2list(argparse.Action):
@@ -172,6 +255,7 @@ if __name__ == '__main__':
         if args.process_read_data:
             get_scripted(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList=sSpkrList, lVerf = lVerf, lGrades = lGrades)
         if args.process_spontaneous_data:
+            get_spont(sOGIDir, fTxt, fUtt2Spk, fWavScp, sSpkrList=sSpkrList, lGrades = lGrades)
 
 
 
