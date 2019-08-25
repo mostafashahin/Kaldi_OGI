@@ -9,7 +9,8 @@ stage=0
 
 #Call data preparation script with the path to the OGI data (must contains the docs disrectory)
 
-OGIROOT=/media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus/
+#OGIROOT=/media/mostafa/Windows/root/PhD/Datasets/OREGON_Kids_Corpus/
+OGIROOT=/srv/scratch/z5173707/Dataset/OGI/
 #set flags
 data_prep_opt='-r -s' #-r to activate read data, -s to activate spontaneous data
 
