@@ -15,7 +15,7 @@ export LC_ALL=C #To make sure that the sorting of files will be performed in the
 OGIROOT=$1
 data_prep_opt=${@:2}
 ver=1,2,3 #The selected level of verification 
-grads='5-10' #The selected grad range of children
+grads='0-10' #The selected grad range of children
 
 trndir=data/train
 tstdir=data/test
@@ -35,7 +35,11 @@ touch $trndir/spkrs $tstdir/spkrs $devdir/spkrs
 #Split speakers to train, test and dev by default 15% for test, 15% dev and 70% training
 #Can be modified by passing optional --train_portion float, --test_portion float, --dev_portion float to the command
 
-local/ogi_split_data.py $OGIROOT $trndir/spkrs $tstdir/spkrs $devdir/spkrs
+[ -f local/train_spkrs ] && [ -f local/test_spkrs ] && [ -f local/dev_spkrs ] || local/ogi_split_data.py $OGIROOT local/train_spkrs local/test_spkrs local/dev_spkrs
+
+cp local/train_spkrs $trndir/spkrs
+cp local/test_spkrs $tstdir/spkrs
+cp local/dev_spkrs $devdir/spkrs
 
 #Spontaneous speech can be used only in training
 local/gen_text_utt2spkr.py $OGIROOT $trndir/text $trndir/utt2spk $trndir/wav.scp -l $trndir/spkrs -v $ver -g $grads $data_prep_opt

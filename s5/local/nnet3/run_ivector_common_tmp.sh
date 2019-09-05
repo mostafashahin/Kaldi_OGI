@@ -10,7 +10,8 @@ speed_perturb=true
 . ./path.sh
 . ./utils/parse_options.sh
 
-mkdir -p exp/nnet3_vp
+dir=exp/nnet3_vp_delta
+mkdir -p $dir
 train_set=train
 
 
@@ -83,13 +84,13 @@ if [ $stage -le 5 ]; then
   steps/train_lda_mllt.sh --cmd "$train_cmd" --num-iters 13 \
     --splice-opts "--left-context=3 --right-context=3" \
     5500 90000 data/train_hires \
-    data/lang exp/tri2b_ali exp/nnet3_vp/tri3b
+    data/lang exp/tri2b_ali $dir/tri3b
 fi
 
 if [ $stage -le 6 ]; then
   # To train a diagonal UBM we don't need very much data, so use the smallest subset.
   steps/online/nnet2/train_diag_ubm.sh --cmd "$train_cmd" --nj 30 --num-frames 200000 \
-    data/${train_set}_10k_hires 512 exp/nnet3_vp/tri3b exp/nnet3_vp/diag_ubm
+    data/${train_set}_10k_hires 512 $dir/tri3b $dir/diag_ubm
 fi
 
 if [ $stage -le 7 ]; then
@@ -97,7 +98,7 @@ if [ $stage -le 7 ]; then
   # fairly small dim (defaults to 100) so we don't use all of it, we use just the
   # 100k subset (just under half the data).
   steps/online/nnet2/train_ivector_extractor.sh --cmd "$train_cmd" --nj 10 \
-    data/train_hires exp/nnet3_vp/diag_ubm exp/nnet3_vp/extractor || exit 1;
+    data/train_hires $dir/diag_ubm $dir/extractor || exit 1;
 fi
 
 if [ $stage -le 8 ]; then
@@ -111,11 +112,11 @@ if [ $stage -le 8 ]; then
   utils/data/modify_speaker_info.sh --utts-per-spk-max 2 data/${train_set}_hires data/${train_set}_max2_hires
   
   steps/online/nnet2/extract_ivectors_online.sh --cmd "$train_cmd" --nj 30 \
-    data/${train_set}_max2_hires exp/nnet3_vp/extractor exp/nnet3_vp/ivectors_$train_set || exit 1;
+    data/${train_set}_max2_hires $dir/extractor $dir/ivectors_$train_set || exit 1;
 
   for data_set in dev test ; do
     steps/online/nnet2/extract_ivectors_online.sh --cmd "$train_cmd" --nj 30 \
-      data/${data_set}_hires exp/nnet3_vp/extractor exp/nnet3_vp/ivectors_$data_set || exit 1;
+      data/${data_set}_hires $dir/extractor $dir/ivectors_$data_set || exit 1;
   done
 fi
 

@@ -5,7 +5,7 @@
 set -e # exit on error
 
 stage=0
-n=1 #$(nproc)
+n=15 #$(nproc)
 
 #Call data preparation script with the path to the OGI data (must contains the docs disrectory)
 

@@ -8,6 +8,7 @@ from split_path import Split_Path
 from random import shuffle
 
 #This function should split the speakers in the OGI data into train, dev, test. Based on the determined portions.
+#Speakers selection done randomly so every time this script run different split will be out.
 def Split_Data(sOGIDir, sTrainSpkFile, sTestSpkFile, sDevSpkFile, fTestPortion = 0.15, fDevPortion = 0.15, fTrainPortion = -1):
     #TO DO: Check if 'docs' exist first and return with error
     assert fTestPortion + fDevPortion + fTrainPortion <= 1, "Summation of portions should not exceed 1"

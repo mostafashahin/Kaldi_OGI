@@ -40,6 +40,8 @@ svn co http://svn.code.sf.net/p/cmusphinx/code/trunk/logios/ $dir/logios
 
 perl $dir/logios/Tools/MakeDict/make_pronunciation.pl -tools $dir/logios/Tools/ -dictdir $dir -words missing-words.tmp -dict missing-words.dict
 
+sed -i 's/\bIX\b/IY/g' $dir/missing-words.dict
+
 cat $dir/lexicon.txt $dir/missing-words.dict > $dir/lexicon.tmp
 sort -u $dir/lexicon.tmp > $dir/lexicon.txt
 #TODO merge with lexicon dict
