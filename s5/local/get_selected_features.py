@@ -55,7 +55,7 @@ def ArgParser():
     parser.add_argument('sUtt_Fram',  help='The path to the utt2num_fram file', type=str)
     parser.add_argument('sFeat_Scp',  help='The path to the feats.scp file', type=str)
     parser.add_argument('sCopy_Feat',  help='The path to copy-feat binary', type=str)
-    parser.add_argument('-n','--num-frams', help='number of required frames from each spkr/grad', dest='num_frams', default=1000)
+    parser.add_argument('-n','--num-frams', help='number of required frames from each spkr/grad', dest='num_frams', type=int, default=1000)
     parser.add_argument('-l', '--spkrl', help='The file contains list of selected speakers', dest='spkrl', type=str, default='')
     parser.add_argument('-g', '--grade', dest='grd', help='The list of kids grads to be included', action=str2list, default=list(range(0,11)))
     return parser.parse_args()
